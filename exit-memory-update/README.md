@@ -31,7 +31,7 @@ Full disclosure of what the mod hooks, runs and sends:
   - `/exit`, once the update turn finishes, to complete the exit you asked for.
 - **Submits one prompt**, only after you pick "Yes" and only when `claude-md-management` is *not* installed. The prompt is fixed text and carries no conversation content or other data. It asks Claude to review the current session, read the project's CLAUDE.md (creating it if missing), add durable, non-obvious learnings (commands, conventions, architecture facts, gotchas, stated preferences) as concise, targeted edits, and summarize what changed. The full text is `FALLBACK_PROMPT` in [`hooks/register.ts`](hooks/register.ts).
 
-The mod makes no network requests, and it doesn't read or write files itself. Any file edits are made by Claude in the normal turn, under your usual permission settings.
+See [PRIVACY.md](PRIVACY.md). The mod makes no network requests, and it doesn't read or write files itself. Any file edits are made by Claude in the normal turn, under your usual permission settings.
 
 ## Limitation
 
