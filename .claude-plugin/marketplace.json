@@ -1,0 +1,16 @@
+{
+  "name": "manueldelgado-mods",
+  "owner": {
+    "name": "Manuel Delgado Tenorio"
+  },
+  "metadata": {
+    "description": "Claude Code mods by Manuel Delgado Tenorio."
+  },
+  "plugins": [
+    {
+      "name": "exit-memory-update",
+      "source": "./exit-memory-update",
+      "description": "Before /exit, offers to update CLAUDE.md with the session's learnings (via claude-md-management when installed)."
+    }
+  ]
+}
