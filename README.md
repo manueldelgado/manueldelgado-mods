@@ -26,9 +26,11 @@ claude plugin install exit-memory-update@manueldelgado-mods --scope user
 When you run `/exit` (or `/quit`), asks whether to update CLAUDE.md with what was learned in the session:
 
 - **Yes, update and exit**: if the [CLAUDE.md Management](https://github.com/anthropics/claude-plugins-official) plugin (`claude-md-management`) is installed, runs its `/claude-md-management:revise-claude-md` skill; otherwise Claude reviews the session and makes targeted edits to the project's CLAUDE.md itself. A status line shows while it runs; when it finishes, a band summarizes the edits and counts down to exit, with **Exit now** and **Stay**. If the update is interrupted or fails, the session stays open.
-- **Type under Other**: same as Yes, with your text as guidance on what to record.
+- **Type something**: same as Yes, with your text as guidance on what to record.
 - **No, just exit**: exits right away.
 - **Cancel**: stays in the session.
+
+![The /exit question asked by exit-memory-update](exit-memory-update/screenshots/exit-question.png)
 
 It doesn't ask in sessions with no messages, or in `claude -p` runs.
 

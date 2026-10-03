@@ -98,6 +98,13 @@ test('the question names the skill that will run', async ($, on) => {
   expect(seen.questions[0]).toContain(`/${SKILL}`)
 })
 
+test('the question points to the Type something option for guidance', async ($, on) => {
+  const seen = setup(on, 'Cancel', true)
+  await runExit($)
+  expect(seen.questions[0]).toContain('pick Type something and say what to focus on')
+  expect(seen.questions[0]).not.toContain('Other')
+})
+
 test('the question says when claude-md-management is missing', async ($, on) => {
   const seen = setup(on, 'Cancel', false)
   await runExit($)
@@ -111,14 +118,14 @@ test('the question notes an update made earlier in the session', async ($, on) =
   expect(seen.questions[0]).toContain('already updated this session')
 })
 
-test('text typed under Other steers the skill', async ($, on) => {
+test('text typed under Type something steers the skill', async ($, on) => {
   const seen = setup(on, 'the test commands', true)
   await runExit($)
   await seen.clock.settle()
   expect(seen.skillArgs).toEqual(['the test commands'])
 })
 
-test('text typed under Other steers the built-in prompt', async ($, on) => {
+test('text typed under Type something steers the built-in prompt', async ($, on) => {
   const seen = setup(on, 'the test commands', false)
   await runExit($)
   await seen.clock.settle()

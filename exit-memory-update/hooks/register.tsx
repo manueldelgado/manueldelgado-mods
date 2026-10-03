@@ -94,7 +94,7 @@ export const register: Register = on => {
 
     let answer: string
     try {
-      answer = await $.ui.ask(`${question} ${how} To steer it, type what to focus on under Other.`, {
+      answer = await $.ui.ask(`${question} ${how} To steer it, pick Type something and say what to focus on.`, {
         header: 'CLAUDE.md',
         options: [YES, NO, CANCEL],
       })
@@ -103,7 +103,7 @@ export const register: Register = on => {
     }
 
     if (answer === NO) return next(e)
-    // Anything typed under Other is guidance for the update, not a cancel.
+    // Anything typed under "Type something" is guidance for the update, not a cancel.
     const guidance = answer === YES || answer === CANCEL ? '' : answer.trim()
     if (answer !== YES && !guidance) return { text: 'Exit cancelled.' }
 
