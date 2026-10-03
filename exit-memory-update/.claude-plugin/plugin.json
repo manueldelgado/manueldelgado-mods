@@ -1,7 +1,8 @@
 {
   "name": "exit-memory-update",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Before /exit, offers to update CLAUDE.md with the session's learnings (via claude-md-management when installed).",
+  "types": "./types/index.d.ts",
   "author": {
     "name": "Manuel Delgado Tenorio"
   },
