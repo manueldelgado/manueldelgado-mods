@@ -14,7 +14,7 @@ A Claude Code mod that, when you run `/exit` (or `/quit`), asks whether to updat
 
 When you run `/exit`, it asks: *"Update CLAUDE.md with this session's learnings before exiting?"* The question says how the update will run (the `claude-md-management` skill, or Claude editing directly) and, if CLAUDE.md was already edited earlier in the session, says so.
 
-- **Yes, update and exit**: updates CLAUDE.md (see below). While it runs, a status line under the prompt reads *"Updating CLAUDE.md, then exiting · Esc to stay"*. When it finishes, a band above the prompt shows how many edits were made to CLAUDE.md and counts down five seconds before exiting, with **Exit now** (`1`) and **Stay** (`2`) buttons. Typing a new prompt or pressing Esc during the update keeps the session open, and so does an update that fails.
+- **Yes, update and exit**: updates CLAUDE.md (see below). While it runs, a status line under the prompt reads *"Updating CLAUDE.md, then exiting · Esc to stay"*. When it finishes, a band above the prompt shows how many edits were made to CLAUDE.md and counts down five seconds before exiting, with **Exit now** (`1`) and **Stay** (`2`) buttons. If the update changed nothing (for example, `claude-md-management` proposed edits and asked whether to apply them), the band doesn't count down: it waits for your reply, and once that reply's turn makes edits, the countdown runs. Pressing Esc during the update keeps the session open, and so do an update that fails and a new prompt typed during the countdown.
 - **Type something**: same as Yes, with your text as guidance on what to record (for example, *"the test commands"*).
 - **No, just exit**: exits right away.
 - **Cancel**: stays in the session.
@@ -27,7 +27,7 @@ Running `/exit` in a session asks first. The question names how the update will 
 
 ![The /exit question: Yes, update and exit; No, just exit; Cancel](screenshots/exit-question.png)
 
-After "Yes", the update runs as a normal turn. Here `claude-md-management`'s skill proposes its CLAUDE.md edits, and the session exits once the turn finishes:
+After "Yes", the update runs as a normal turn. Here `claude-md-management`'s skill proposes its CLAUDE.md edits; the session waits for your approval and exits once they're applied:
 
 ![The CLAUDE.md update running through /claude-md-management:revise-claude-md](screenshots/update-running.png)
 
@@ -38,7 +38,7 @@ Full disclosure of what the mod hooks, runs and sends:
 - **Hooks `/exit`** (the `command.run` event for `exit`): it holds the exit to show the question above. "No" lets the exit go through unchanged; "Cancel" stops it. It hooks no other command.
 - **Hooks `turn.complete`**: only to notice when the CLAUDE.md update turn has finished. It reads nothing from the turn except whether it ended normally.
 - **Hooks `tool.call`**: to count successful `Edit`/`Write` calls on a file named `CLAUDE.md`, for the question and the band. It reads only the tool name, the file path and whether the call succeeded, and changes nothing.
-- **Hooks `prompt.submit`**: only to cancel the exit countdown when you send a new prompt. It passes the prompt through unread and unchanged.
+- **Hooks `prompt.submit`**: to cancel the exit countdown when you send a new prompt, or, while the band waits for your reply to proposed edits, to keep the exit pending until that reply's turn finishes. It passes the prompt through unread and unchanged.
 - **Hooks `session.start`**: to reset its counters.
 - **Draws the band above the prompt** (`ui.render` for `AbovePrompt`) during the countdown only, and a status line while the update runs.
 - **Runs slash commands itself**, only after you pick "Yes":

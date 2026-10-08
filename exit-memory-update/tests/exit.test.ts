@@ -196,11 +196,68 @@ for (const surface of ['terminal', 'desktop'] as const) {
   })
 }
 
+const reply = ($: Engine, text: string) => $.prompt.submit({ text, wait: false, origin: { kind: 'composer' } })
+
 test('a new prompt during the countdown cancels it', async ($, on) => {
   const seen = setup(on, YES, true)
   await runExit($)
+  await seen.clock.settle()
+  await editClaudeMd($)
   await finishTurn($)
-  await $.prompt.submit({ text: 'one more thing', wait: false, origin: { kind: 'composer' } })
+  await reply($, 'one more thing')
   await seen.clock.advance(10_000)
   expect(seen.exits).toBe(0)
+})
+
+for (const surface of ['terminal', 'desktop'] as const) {
+  test(`an update that only proposes edits waits for the reply instead of exiting (${surface})`, async ($, on) => {
+    const seen = setup(on, YES, true)
+    await runExit($)
+    await seen.clock.settle()
+    await finishTurn($)
+
+    await seen.clock.advance(10_000)
+    expect(seen.exits).toBe(0)
+    const band = await $.ui.mount({ ...BAND, surface })
+    expect(await band.find({ type: 'Text', text: /No changes to CLAUDE\.md yet/ })).toBeDefined()
+    expect(await band.find({ type: 'Text', text: /Exiting in/ })).toBeUndefined()
+    expect(await band.find({ key: 'exit' })).toBeDefined()
+  })
+}
+
+test('replying to the proposed edits applies them, then counts down to exit', async ($, on) => {
+  const seen = setup(on, YES, true)
+  await runExit($)
+  await seen.clock.settle()
+  await finishTurn($)
+
+  await reply($, 'yes, apply them')
+  expect(seen.statuses.at(-1)).toContain('Esc to stay')
+  await editClaudeMd($)
+  await finishTurn($)
+  expect(seen.statuses.at(-1)).toBeUndefined()
+  expect(seen.exits).toBe(0)
+  await seen.clock.advance(5000)
+  expect(seen.exits).toBe(1)
+})
+
+test('a reply that applies nothing keeps waiting', async ($, on) => {
+  const seen = setup(on, YES, true)
+  await runExit($)
+  await seen.clock.settle()
+  await finishTurn($)
+  await reply($, "no, don't apply them")
+  await finishTurn($)
+  await seen.clock.advance(10_000)
+  expect(seen.exits).toBe(0)
+})
+
+test('/exit while waiting for the reply exits without asking again', async ($, on) => {
+  const seen = setup(on, YES, true)
+  await runExit($)
+  await seen.clock.settle()
+  await finishTurn($)
+  await runExit($)
+  expect(seen.questions.length).toBe(1)
+  expect(seen.exits).toBe(1)
 })

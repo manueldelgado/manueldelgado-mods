@@ -24,8 +24,9 @@ const countdown = atom({ plugin: 'exit-memory-update', key: 'countdown' } as con
 
 const isClaudeMd = (path: string) => /(^|[\\/])CLAUDE\.md$/.test(path)
 
-const describeEdits = (edits: number) =>
-  edits === 0 ? 'No changes to CLAUDE.md.' : `CLAUDE.md updated (${edits} ${edits === 1 ? 'edit' : 'edits'}).`
+const describeEdits = (edits: number) => `CLAUDE.md updated (${edits} ${edits === 1 ? 'edit' : 'edits'}).`
+
+const UPDATING = 'Updating CLAUDE.md, then exiting · Esc to stay'
 
 // The countdown's ticking timer, while the band counts down to exit.
 let tick: Timer | undefined
@@ -75,8 +76,8 @@ export const register: Register = on => {
     // Our own follow-up /exit, or a headless/SDK run: exit as asked.
     if (e.origin?.kind === 'plugin' && e.origin.name === $.plugin.name) return next(e)
     if (e.origin?.kind === 'sdk') return next(e)
-    // Already counting down to exit: /exit again just skips the wait.
-    if (tick) {
+    // The band is up (counting down or waiting): /exit again just skips the wait.
+    if (tick || (await read($, countdown))) {
       await stopCountdown($)
       return next(e)
     }
@@ -109,7 +110,7 @@ export const register: Register = on => {
 
     isExitPending = true
     updateEdits = 0
-    $.ui.status('Updating CLAUDE.md, then exiting · Esc to stay')
+    $.ui.status(UPDATING)
     // A command.run hook can't start a command or prompt itself; do it from a timer once /exit returns.
     $.clock.after(0, () => {
       const started = skill
@@ -143,8 +144,15 @@ export const register: Register = on => {
       return result
     }
 
-    // Leave the summary on screen for a few seconds; the band offers Exit now and Stay.
     const edits = updateEdits
+    // Nothing applied yet: the update most likely ended by proposing edits and asking for approval.
+    // Wait for the reply instead of exiting under it; the band still offers Exit now and Stay.
+    if (edits === 0) {
+      await update($, countdown, () => ({ edits }))
+      return result
+    }
+
+    // Leave the summary on screen for a few seconds; the band offers Exit now and Stay.
     await update($, countdown, () => ({ seconds: COUNTDOWN_SECONDS, edits }))
     tick?.cancel()
     tick = $.clock.every(1000, async () => {
@@ -155,9 +163,17 @@ export const register: Register = on => {
     return result
   })
 
-  // Typing a new prompt during the countdown means the person wants to stay.
   on('prompt.submit', async ($, e, next) => {
-    if (tick) await stopCountdown($)
+    const state = await read($, countdown)
+    if (state && state.seconds === undefined) {
+      // A reply to the update's proposed edits: carry on, and exit once that turn is done.
+      await stopCountdown($)
+      isExitPending = true
+      $.ui.status(UPDATING)
+    } else if (tick) {
+      // Typing a new prompt during the countdown means the person wants to stay.
+      await stopCountdown($)
+    }
     return next(e)
   })
 
@@ -168,9 +184,15 @@ export const register: Register = on => {
     const { Box, Button, Text } = $.ui.resolve(e)
     return (
       <Box flexDirection="row" gap={2}>
-        <Text>
-          {describeEdits(state.edits)} <Text dimColor>Exiting in {state.seconds}s</Text>
-        </Text>
+        {state.seconds === undefined ? (
+          <Text>
+            No changes to CLAUDE.md yet. <Text dimColor>Reply to Claude to apply them; the session exits after.</Text>
+          </Text>
+        ) : (
+          <Text>
+            {describeEdits(state.edits)} <Text dimColor>Exiting in {state.seconds}s</Text>
+          </Text>
+        )}
         <Button key="exit" label="Exit now" hotkey="1" plain onPress={() => exitNow($)} />
         <Button key="stay" label="Stay" hotkey="2" plain onPress={() => stay($)} />
       </Box>
